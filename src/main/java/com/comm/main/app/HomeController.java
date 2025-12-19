@@ -237,16 +237,15 @@ public class HomeController {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(urlConstants.fileError);  // Using the file error from UrlConstants
         }
-        if (textInput == null || textInput.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(urlConstants.nameError);  // Using the name error from UrlConstants
-        }
 
         try {
-            // Normalize the input to uppercase (or lowercase) for case-insensitive handling
-            String normalizedInput = textInput.trim().toUpperCase();  // Convert the input to uppercase for consistent processing
-
-            ByteArrayInputStream in = conversion.generateExcel(file.getInputStream(), normalizedInput);
-
+            ByteArrayInputStream in;
+                    if (textInput == null || textInput.trim().isEmpty()) {
+                        in = conversion.generateExcel(file.getInputStream());
+                    }else{
+                        String normalizedInput = textInput.trim().toUpperCase();  // Convert the input to uppercase for consistent processing
+                        in = conversion.generateExcel(file.getInputStream(),normalizedInput);
+                    }
             if (in.available() == 0) {
                 return ResponseEntity.badRequest().body(urlConstants.noNameError);  // Using the no-name error from UrlConstants
             }
