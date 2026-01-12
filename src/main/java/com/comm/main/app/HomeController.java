@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.logging.Level;
 
 @Controller
 public class HomeController {
@@ -230,36 +231,56 @@ public class HomeController {
     }
 
     @PostMapping(UrlConstants.UPLOAD_EXCEL)
-    public ResponseEntity<Object> handleFileUpload(@RequestParam(UrlConstants.DOCUMENT) MultipartFile file,
-                                                   @RequestParam(UrlConstants.TXT_INPUT) String textInput,
-                                                   RedirectAttributes redirectAttributes) {
+    public ResponseEntity<Object> handleFileUpload(
+            @RequestParam(UrlConstants.DOCUMENT) MultipartFile file,
+            @RequestParam(UrlConstants.TXT_INPUT) String textInput,
+            RedirectAttributes redirectAttributes) {
 
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(urlConstants.fileError);  // Using the file error from UrlConstants
+            logger.warn("File upload failed: Empty file received");
+            return ResponseEntity.badRequest().body(urlConstants.fileError);
         }
 
         try {
+            logger.info("Processing file upload. File name: {}, Size: {} bytes",
+                    file.getOriginalFilename(), file.getSize());
+
             ByteArrayInputStream in;
-                    if (textInput == null || textInput.trim().isEmpty()) {
-                        in = conversion.generateExcel(file.getInputStream());
-                    }else{
-                        String normalizedInput = textInput.trim().toUpperCase();  // Convert the input to uppercase for consistent processing
-                        in = conversion.generateExcel(file.getInputStream(),normalizedInput);
-                    }
-            if (in.available() == 0) {
-                return ResponseEntity.badRequest().body(urlConstants.noNameError);  // Using the no-name error from UrlConstants
+
+            if (textInput == null || textInput.trim().isEmpty()) {
+                logger.info("Text input is empty. Generating Excel without filter");
+                in = conversion.generateExcel(file.getInputStream());
+            } else {
+                String normalizedInput = textInput.trim().toUpperCase();
+                logger.info("Generating Excel with filter value: {}", normalizedInput);
+                in = conversion.generateExcel(file.getInputStream(), normalizedInput);
             }
 
-            return ResponseEntity
-                    .ok()
-                    .contentType(UrlConstants.EXCEL_MEDIA_TYPE)  // Using the static media type
+            if (in.available() == 0) {
+                logger.error("Excel generation failed: No data found in output stream");
+                return ResponseEntity.badRequest().body(urlConstants.noNameError);
+            }
+
+            logger.info("Excel generated successfully for file: {}", file.getOriginalFilename());
+
+            return ResponseEntity.ok()
+                    .contentType(UrlConstants.EXCEL_MEDIA_TYPE)
                     .body(new InputStreamResource(in));
 
         } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(urlConstants.serverError);  // Using the server error from UrlConstants
+            logger.error("Excel generation failed due to IOException. File: {}",
+                    file.getOriginalFilename(), e);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(urlConstants.serverError);
+        } catch (Exception e) {
+            logger.error("Unexpected error during file upload processing", e);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(urlConstants.serverError);
         }
     }
+
 
 
 
