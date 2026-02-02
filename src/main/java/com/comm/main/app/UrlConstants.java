@@ -32,7 +32,7 @@ public class UrlConstants {
     public static final String RUN_JAR_BACKUP = "/api/run-jar-backup";
     public static final String GENERATE_REPORT = "/generateReport";
     public static final String HOME_DISPLAY = "/home";
-    public static final String TUDF_EXCEL_MAP = "/tudf_to_excel";
+    public static final String TUDF_EXCEL_MAP = "/tudfToExcel";
     public static final String UPLOAD_EXCEL = "/upload-excel";
     public static final String FILE = "file";
     public static final String REDIRECT_SELECT_REPORT = "redirect:/select-report";
